@@ -1,0 +1,51 @@
+import os
+import os.path
+import time
+
+from logging import getLogger
+from logging import FileHandler
+from logging import StreamHandler
+from logging import INFO
+from logging import ERROR
+
+
+# class Workspace(object):
+def gen_workspace_path(under_dir):
+    timestamp = int(time.time())
+    ws_name = "perftool_ssh_ws_%d" % timestamp
+    ws_path = os.path.join(under_dir, ws_name)
+
+    assert (not os.path.isdir(ws_path))
+    print(ws_path)
+    os.mkdir(ws_path)
+
+    return ws_path
+
+
+def gen_log_path(ws_path):
+    log_name = "run.log"
+    log_path = os.path.join(ws_path, log_name)
+
+    logger = getLogger(ws_path)
+
+    handler = FileHandler(log_path)
+    handler.setLevel(INFO)
+    logger.addHandler(handler)
+
+    handler_shell = StreamHandler()
+    handler_shell.setLevel(ERROR)
+    logger.addHandler(handler_shell)
+
+    return logger
+
+
+def generate_workspace(under_dir):
+    if not os.path.isdir(under_dir):
+        print("Failed: %s doesn't exist or isn't a directory." % under_dir)
+
+    result = {}
+
+    result["ws_path"] = gen_workspace_path(under_dir)
+    result["logger"] = gen_log_path(result["ws_path"])
+
+    return result

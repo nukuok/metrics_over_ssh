@@ -1,0 +1,10 @@
+#!/bin/bash
+
+function usage() {
+    echo "Usage ./run_monitore.sh monitor_interval monitor_period"
+    exit 1
+}
+
+if [[ $# -eq 0 ]]; then
+   usage()
+fi

@@ -1,0 +1,112 @@
+import os
+import os.path
+import sys
+import time
+
+from commands import getstatusoutput
+from logging import getLogger
+from logging import FileHandler
+from logging import Formatter
+from logging import StreamHandler
+from logging import INFO
+from logging import ERROR
+
+
+def to_continue(info="Error !!!"):
+    print("===========")
+    print(info)
+    c = 0
+    while c not in ["y", "n"]:
+        c = raw_input("Continue [y/n]? ")
+        print("===========")
+        if c == "y":
+            break
+        elif c == "n":
+            sys.exit(1)
+    return 0
+
+
+class Workspace(object):
+    def _gen_workspace_path(self):
+        # self.timestamp = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+        # self.ws_name = "ws_%s" % self.timestamp
+        self.ws_name = "workspace"
+        self.ws_path = os.path.join(self.under_dir, self.ws_name)
+
+        # assert (not os.path.isdir(self.ws_path))
+        # print(self.ws_path)
+        if not os.path.exists(self.ws_path):
+            os.mkdir(self.ws_path)
+
+        return 0
+
+    def _gen_log_path(self):
+        self.log_name = "run.log"
+        self.log_path = os.path.join(self.ws_path, self.log_name)
+
+        self.logger = getLogger(self.ws_path)
+        self.logger.setLevel(INFO)
+
+        log_format = Formatter("%(name)s:[%(levelname)s]:%(message)s")
+
+        handler = FileHandler(self.log_path)
+        handler.setLevel(INFO)
+        handler.setFormatter(log_format)
+        self.logger.addHandler(handler)
+
+        handler_shell = StreamHandler()
+        handler_shell.setLevel(ERROR)
+        handler_shell.setFormatter(log_format)
+        self.logger.addHandler(handler_shell)
+
+        return 0
+
+    def generate_workspace(self, under_dir):
+        if not os.path.isdir(under_dir):
+            print("Failed: %s doesn't exist or isn't a directory." % under_dir)
+
+            return 1
+        else:
+            self.under_dir = under_dir
+            self._gen_workspace_path()
+            self._gen_log_path()
+            self.workspace_gen = 0
+            return 0
+
+
+class SubWorkspace(Workspace):
+    def check_hosts(self, host_list):
+        ping_command = "ping -c 1 -t 2 %s"
+        results = [getstatusoutput(ping_command % host) for host in host_list]
+        status = [output[0] for output in results]
+        return status
+
+    def _make_sub_hosts(self):
+        check_result = self.check_hosts(self.host_list)
+        self.valid_hosts = []
+        for ii, value in enumerate(check_result):
+            host = self.host_list[ii]
+            if value == 0:
+                self.logger.info("host added: %s" % host)
+                self.valid_hosts += [host]
+            else:
+                self.logger.error("host unreachable: %s" % host)
+                to_continue()
+
+    def _host_name_replace(self, hostname):
+        return hostname.replace(".", "_")
+
+    def generate_subworkspace(self, host_list):
+        assert self.workspace_gen == 0
+        self.host_list = host_list
+        self._make_sub_hosts()
+        for host in self.valid_hosts:
+            os.mkdir(os.path.join(self.ws_path,
+                                  self._host_name_replace(host)))
+
+        self.subworksapce_gen = 0
+        return 0
+
+
+class PrepareSSHScript(SubWorkspace):
+    pass
