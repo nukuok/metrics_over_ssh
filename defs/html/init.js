@@ -1,12 +1,12 @@
-body = d3.select("body")
+var body = d3.select("body")
 
-leftBarDiv = body.append("div")
+var leftBarDiv = body.append("div")
     .attr("id", "div1")
-leftBarSvg = leftBarDiv.append("svg")
+var leftBarSvg = leftBarDiv.append("svg")
     .attr("x", 0)
     .attr("y", 0)
     .attr("width", 200)
-    .attr("height", 1000)
+    .attr("height", 700)
 
 function addRun(svgNode, metricsObject){
     var rowCount = 0;
@@ -77,7 +77,7 @@ function addRun(svgNode, metricsObject){
 
 d3.json("/source/lists", function(response) {metricsList = response;
 					     hostSourcePosition = addRun(leftBarSvg, metricsList);
-					     showingList = hostSourcePosition.forEach(function(){return 0;});
+					     // showingList = hostSourcePosition.forEach(function(){return 0;});
 					    });
 
 

@@ -97,7 +97,10 @@ class MetricsData(object):
     def extract_data_after_index(self, index, keys):
         result = {}
         for key in keys:
-            result[key] = self.data[key][index:self.available_index]
+            if key == "timestamp":
+                result[key] = self.data[key][index:self.available_index]
+            else:
+                result[key] = [float(value) for value in self.data[key][index:self.available_index]]
 
         return result
 

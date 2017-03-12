@@ -1,7 +1,23 @@
 #div1 {
     width: 200;
-    height: 800;
+    height: 600;
     border-style: solid;
     border-color: gray;
     overflow: scroll;
+    float : left;
+}
+
+.test {
+    width: 600;
+    height: 600;
+    border-style: solid;
+    border-color: gray;
+    overflow: scroll;
+    float : left;
+}
+
+.line {
+    fill: none;
+    stroke: red;
+    stroke-width: 2px;
 }
