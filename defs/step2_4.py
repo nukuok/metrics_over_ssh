@@ -80,7 +80,15 @@ class ReportGenerator(object):
 if __name__ == '__main__':
     rg = ReportGenerator()
     rg.startup()
-    rg.gen_all_report()
+    rg.gen_report(0)
     # rg.show_list()
-    result_template = "var data=[%s];"
-    print(result_template % ",".join([graph.get_output(rg.sar_data[0].data) for graph in graph_list]))
+    report_string = {}
+    result_template = "var data = [%s];"
+    report_string["data_string"] = result_template % ",".join([graph.get_output(rg.sar_data[0].data) for graph in graph_list])
+    report_string["timestamp_string"] = "var timestamp = %s" % rg.sar_data[0].data["timestamp"]
+
+    with open("defs/html/report_template.html", "r") as fid:
+        report_template = fid.read()
+
+    with open("report.html", "w") as fid:
+        fid.write(report_template % report_string)

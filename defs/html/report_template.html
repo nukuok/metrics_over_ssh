@@ -1,0 +1,130 @@
+<html>
+    <head>
+	<meta charset="utf-8">
+	<script src="https://d3js.org/d3.v4.min.js">	</script>
+	<script>
+	    %(data_string)s
+	    %(timestamp_string)s
+
+	 var parseTime = d3.timeParse("%%H:%%M:%%S");
+	 var formatTime = d3.timeFormat("%%H:%%M:%%S");
+
+	 var newTimeStamp = timestamp.map(function(d){
+	     return parseTime(d);
+	 })
+
+	</script>
+	<!-- <script src="load.js"></script> -->
+	<!-- <link rel="stylesheet" type="text/css" href="style.css"> -->
+    </head>
+    <body>
+	<script>
+	 var body = d3.select("body")
+	 var svg = body.append("svg")
+		       .attr("x", 0)
+		       .attr("y", 0)
+		       .attr("width", 900)
+		       .attr("height", 1000)
+	 var graph_count = 0
+
+	 /* svg.selectAll("g")
+	    .data(data)
+	    .enter()
+	    .append("g")*/
+
+	</script>
+	<script>
+	 function pgModel(){
+	     this.model = {};
+	     /* this.data = {};*/
+	     /* this.timestamp = [];*/
+
+
+	     this.upper = 100;
+	     this.lower = 0;
+	     this.startIndex = 0;
+	     // this.endIndex = 0;
+
+	     this.model.method = {};
+	     this.model.method.update={};
+	 }
+
+	 function pgView(){
+	     this.draw=function(){
+		 // console.log(this.data);
+		 var width = 400;
+		 var height = 200;
+		 var xScale = d3.scaleTime().range([0, width]);
+		 var yScale = d3.scaleLinear().range([height, 0]);
+
+		 var value = data[0]["%%sys-CPU-all"]
+
+		 var valueline = d3.line()
+				   .x(function(d, i) { return xScale(newTimeStamp[i]); })
+				   .y(function(d, i) { return yScale(value[i]); });
+
+		 xScale.domain(d3.extent(newTimeStamp))
+		 yScale.domain([0, 100])
+
+		 /* console.log(xScale(newTimeStamp[0]))*/
+		 // console.log(xScale(newTimeStamp[1]))
+		 /* console.log(timestamp)*/
+		 // console.log(yScale(this.data["%%sys-CPU-all"][1]))
+		 /* console.log(value)*/
+
+		 this.nodeg.append("path")
+		       .data([timestamp])
+		       .attr("class", "line")
+		       .attr("d", valueline)
+		       .attr("fill", "none")
+		       .attr("stroke", "blue")
+		       .attr("stroke-width", 2)
+
+		 this.nodeg.append("g")
+		       .attr("transform", "translate(0, " + height + ")")
+		       .call(d3.axisBottom(xScale)
+			       .ticks(4)
+			       .tickFormat(formatTime))
+
+		 this.nodeg.append("g")
+		       .call(d3.axisLeft(yScale))
+	     };
+	     this.remove=function(){
+		 this.nodeg.remove();
+	     }
+	 }
+
+	 function pgController(){
+	 }
+
+	 var plotGraph = {
+	     init: function(nodeg){
+		 this.nodeg = nodeg;
+		 pgModel.call(this);
+		 pgView.call(this);
+		 pgController.call(this);
+	     }
+	 }
+
+	 var pgInstance = Object.create(plotGraph)
+
+	 var testnodeg = svg.append("g")
+			    .attr("transform", "translate(" + 50 + "," + 20 + ")");
+
+	 pgInstance.init(testnodeg)
+	 /* d3.json("/source/1/status?from_index=0&items=timestamp,%%sys-CPU-all",
+	    function(response){
+	    pgInstance.data = response;
+	    pgInstance.draw();
+	    })*/
+
+	 pgInstance.data = data[0];
+	 pgInstance.draw();
+
+	</script>
+	<!-- <script src="init.js"></script>
+	     <script src="plotColumns.js"></script>
+	     <script src="plotGraph.js"></script> -->
+	<!-- <script src="bodyOnLoad.js"></script> -->
+    </body>
+</html>
