@@ -78,14 +78,17 @@ class ReportGenerator(object):
                                                self.ws_structure[monitor][run][node]))
 
 if __name__ == '__main__':
+    target_id = 0
+
     rg = ReportGenerator()
     rg.startup()
-    rg.gen_report(0)
-    # rg.show_list()
+    rg.show_list()
+    rg.gen_report(target_id)
     report_string = {}
     result_template = "var data = [%s];"
-    report_string["data_string"] = result_template % ",".join([graph.get_output(rg.sar_data[0].data) for graph in graph_list])
-    report_string["timestamp_string"] = "var timestamp = %s" % rg.sar_data[0].data["timestamp"]
+    report_string["data_string"] = result_template % ",".join([graph.get_output(rg.sar_data[target_id].data)
+                                                               for graph in graph_list])
+    report_string["timestamp_string"] = "var timestamp = %s" % rg.sar_data[target_id].data["timestamp"]
 
     with open("defs/html/report_template.html", "r") as fid:
         report_template = fid.read()

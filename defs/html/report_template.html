@@ -13,9 +13,44 @@
 	     return parseTime(d);
 	 })
 
+	 function dataElementReshapeForArea(dict){
+	     var keys = Object.keys(dict);
+	     keys.splice(keys.indexOf("title"), 1);
+	     keys.splice(keys.indexOf("graph_type"), 1);
+
+	     var data = [];
+	     d3.range(dict[keys[0]].length).forEach(
+		 function(index){
+		     var dataItem = {};
+		     for (key in dict){
+			 dataItem[key] = dict[key][index];
+			 }
+		     data.push(dataItem);
+		 })
+	     var result = {};
+	     result.data = data;
+	     result.title = dict.title;
+	     result.graph_type = dict.graph_type;
+	     return result;
+	 }
+
+	 function dataElementReshapeForLine(dict){
+	     var keys = Object.keys(dict);
+	     keys.splice(keys.indexOf("title"), 1);
+	     keys.splice(keys.indexOf("graph_type"), 1);
+
+	     var data = [];
+	     keys.forEach(function(key){
+		 data.push({"key": key, "values": dict[key]})
+		 })
+	     var result = {};
+	     result.data = data;
+	     result.title = dict.title;
+	     result.graph_type = dict.graph_type;
+	     return result;
+	 }
+
 	</script>
-	<!-- <script src="load.js"></script> -->
-	<!-- <link rel="stylesheet" type="text/css" href="style.css"> -->
     </head>
     <body>
 	<script>
@@ -23,27 +58,18 @@
 	 var svg = body.append("svg")
 		       .attr("x", 0)
 		       .attr("y", 0)
-		       .attr("width", 900)
-		       .attr("height", 1000)
+		       .attr("width", 1500)
+		       .attr("height", 2000)
 	 var graph_count = 0
-
-	 /* svg.selectAll("g")
-	    .data(data)
-	    .enter()
-	    .append("g")*/
 
 	</script>
 	<script>
 	 function pgModel(){
 	     this.model = {};
-	     /* this.data = {};*/
-	     /* this.timestamp = [];*/
-
 
 	     this.upper = 100;
 	     this.lower = 0;
 	     this.startIndex = 0;
-	     // this.endIndex = 0;
 
 	     this.model.method = {};
 	     this.model.method.update={};
@@ -51,43 +77,113 @@
 
 	 function pgView(){
 	     this.draw=function(){
-		 // console.log(this.data);
 		 var width = 400;
 		 var height = 200;
-		 var xScale = d3.scaleTime().range([0, width]);
-		 var yScale = d3.scaleLinear().range([height, 0]);
+		 var legendWidth = 10;
+		 var legendHeight = 10;
+		 var legendSpacing = 15;
+		 var xScale = d3.scaleTime().range([0, width]),
+		     yScale = d3.scaleLinear().range([height, 0]),
+		     colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
-		 var value = data[0]["%%sys-CPU-all"]
+		 var keys = Object.keys(this.data);
+		 keys.splice(keys.indexOf("graph_type"), 1);
+		 keys.splice(keys.indexOf("title"), 1);
 
-		 var valueline = d3.line()
-				   .x(function(d, i) { return xScale(newTimeStamp[i]); })
-				   .y(function(d, i) { return yScale(value[i]); });
+		 xScale.domain(d3.extent(newTimeStamp));
+		 colorScale.domain(keys)
 
-		 xScale.domain(d3.extent(newTimeStamp))
-		 yScale.domain([0, 100])
+		 if (this.data.graph_type == "fill"){
+		     var data = dataElementReshapeForArea(this.data);
 
-		 /* console.log(xScale(newTimeStamp[0]))*/
-		 // console.log(xScale(newTimeStamp[1]))
-		 /* console.log(timestamp)*/
-		 // console.log(yScale(this.data["%%sys-CPU-all"][1]))
-		 /* console.log(value)*/
+		     var stack = d3.stack();
+		     stack.keys(keys);
 
-		 this.nodeg.append("path")
-		       .data([timestamp])
-		       .attr("class", "line")
-		       .attr("d", valueline)
-		       .attr("fill", "none")
-		       .attr("stroke", "blue")
-		       .attr("stroke-width", 2)
+		     var area = d3.area()
+				  .x(function(d, i) { return xScale(newTimeStamp[i]); })
+				  .y0(function(d) { return yScale(d[0]); })
+				  .y1(function(d) { return yScale(d[1]); });
 
-		 this.nodeg.append("g")
-		       .attr("transform", "translate(0, " + height + ")")
-		       .call(d3.axisBottom(xScale)
-			       .ticks(4)
-			       .tickFormat(formatTime))
+		     yScale.domain([0, 100]);
 
-		 this.nodeg.append("g")
-		       .call(d3.axisLeft(yScale))
+		     var layer = this.nodeg
+				     .selectAll(".layer")
+				     .data(stack(data.data))
+				     .enter().append("g")
+				     .attr("class", "layer");
+
+		     layer.append("path")
+			  .attr("class", "area")
+			  .style("fill", function(d) { return colorScale(d.key); })
+			  .attr("d", area);
+		     /* .attr("d", function(d,i,j){console.log(d,i,j); return area(d,i,j);});*/
+
+		     this.nodeg.append("g")
+			 .attr("transform", "translate(0, " + height + ")")
+			 .call(d3.axisBottom(xScale)
+				 .ticks(4)
+				 .tickFormat(formatTime))
+
+		     this.nodeg.append("g")
+			 .call(d3.axisLeft(yScale))
+		 } else if (this.data.graph_type = "plot"){
+		     var data = dataElementReshapeForLine(this.data);
+
+		     console.log(data);
+		     var line = d3.line()
+				  .curve(d3.curveBasis)
+				  .x(function(d,i) { return xScale(newTimeStamp[i]); })
+				  .y(function(d,i) { return yScale(d); })
+
+		     var ymaxs = []
+		     data.data.forEach(function(d){ymaxs.push(Math.max.apply(null, d.values))});
+		     ymax = Math.max.apply(null, ymaxs);
+		     yScale.domain([0, ymax * 1.3 + 1]);
+
+		     var layer = this.nodeg
+				     .selectAll(".layer")
+				     .data(data.data)
+				     .enter()
+				     .append("g")
+				     .attr("class", "layer");
+
+		     layer.append("path")
+			  .attr("class", "multiline")
+			  .style("fill", "none")
+			  .style("stroke", function(d){ return colorScale(d.key); })
+			  .attr("d", function(d){return line(d.values);});
+		     /* .attr("d", function(d,i,j){console.log(d,i,j); return area(d,i,j);});*/
+
+		     this.nodeg.append("g")
+			 .attr("transform", "translate(0, " + height + ")")
+			 .call(d3.axisBottom(xScale)
+				 .ticks(4)
+				 .tickFormat(formatTime))
+
+		     this.nodeg.append("g")
+			 .call(d3.axisLeft(yScale))
+
+		     }
+
+		 layer.append("rect")
+		      .attr("x", width + legendSpacing)
+		      .attr("y", function(d, i){return height - legendSpacing * (i + 1);})
+		      .attr("width", legendWidth)
+		      .attr("height", legendHeight)
+		      .attr("fill", function(d){ return colorScale(d.key); })
+		      .attr("stoke", "black")
+
+		 layer.append("text")
+		      .attr("x", width + legendSpacing * 1.5 + legendWidth)
+		      .attr("y", function(d, i){return height - legendSpacing * (i + 1) + legendHeight;})
+		      .style("font-size", 10)
+		      .text(function(d) { return d.key})
+
+		 this.nodeg.append("text")
+		      .attr("x", 20)
+		      .attr("y", -5)
+		      .style("font-size", 18)
+		      .text(data.title)
 	     };
 	     this.remove=function(){
 		 this.nodeg.remove();
@@ -106,25 +202,19 @@
 	     }
 	 }
 
-	 var pgInstance = Object.create(plotGraph)
+	 var numInRow = 2;
+	 for (index in data){
+	     console.log(index);
+	     var pgInstance = Object.create(plotGraph)
+	     var testnodeg = svg.append("g")
+				.attr("transform", "translate(" + (50 + 600 * (index %% numInRow)) + ","
+						 + (40 + 300 * ((index - index %% numInRow)/ numInRow)) + ")");
 
-	 var testnodeg = svg.append("g")
-			    .attr("transform", "translate(" + 50 + "," + 20 + ")");
-
-	 pgInstance.init(testnodeg)
-	 /* d3.json("/source/1/status?from_index=0&items=timestamp,%%sys-CPU-all",
-	    function(response){
-	    pgInstance.data = response;
-	    pgInstance.draw();
-	    })*/
-
-	 pgInstance.data = data[0];
-	 pgInstance.draw();
+	     pgInstance.init(testnodeg)
+	     pgInstance.data = data[index];
+	     pgInstance.draw();
+	 }
 
 	</script>
-	<!-- <script src="init.js"></script>
-	     <script src="plotColumns.js"></script>
-	     <script src="plotGraph.js"></script> -->
-	<!-- <script src="bodyOnLoad.js"></script> -->
     </body>
 </html>

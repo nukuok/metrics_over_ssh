@@ -30,10 +30,15 @@ graph_list = []
 graph_cpu_usage = GraphData(graph_list, graph_type="fill", title="CPU Usage",
                             metrics_filter=lambda x: ("CPU-all" in x) and ("%" in x))
 
-graph_mem_usage = GraphData(graph_list, graph_type="fill", title="Memory Usage",
+
+def kb_to_mb(key):
+    if key.startswith("kb"):
+        return "mb" + key[2:]
+
+graph_mem_usage = GraphData(graph_list, graph_type="plot", title="Memory Usage",
                             metrics_filter=lambda x: x in ["kbswpused", "kbswpfree", "kbcached",
                                                            "kbbuffers", "kbmemused", "kbmemfree"],
-                            modify_key_filter=lambda x: x.startswith("kb"),
+                            modify_key_filter=kb_to_mb,
                             modify_value=lambda x: x / 1000)
 graph_runq = GraphData(graph_list, title="Number of run queue",
                        metrics_filter=lambda x: x in ["runq-sz"])
