@@ -23,6 +23,7 @@ class ReportGenerator(object):
         self.ws_path = os.path.join(os.getcwd(), "workspace")
 
         self.ws_structure, self.sar_list = self.get_dir_structure(self.ws_path)
+        self.report_list = [os.path.join(os.path.dirname(sar_path), "report.html") for sar_path in self.sar_list]
         self.sar_data = []
         self.sar_data_until_line = []
         self.sar_analyzers = []
@@ -49,12 +50,13 @@ class ReportGenerator(object):
 
     def newest_report_existed(self, id):
         target_sar = self.sar_list[id]
-        target_report = os.path.join(os.path.dirname(target_sar), "report.html")
+        # target_report = os.path.join(os.path.dirname(target_sar), "report.html")
+        target_report = self.report_list[id]
         if not(os.path.exists(target_report)):
             return False
         else:
-            ts_time = float(os.getmtime(target_sar))
-            tr_time = float(os.getmtime(target_report))
+            ts_time = float(os.path.getmtime(target_sar))
+            tr_time = float(os.path.getmtime(target_report))
             return tr_time > ts_time
 
     def gen_report(self, id):
@@ -67,6 +69,26 @@ class ReportGenerator(object):
         for ii in range(len(self.sar_list)):
             if not(self.newest_report_existed(ii)):
                 self.gen_report(ii)
+                report_string = {}
+                result_template = "var data = [%s];"
+                report_string["data_string"] = result_template % ",".join([graph.get_output(rg.sar_data[ii].data)
+                                                                           for graph in graph_list])
+                report_string["timestamp_string"] = "var timestamp = %s" % rg.sar_data[ii].data["timestamp"]
+
+                with open("defs/html/report_template.html", "r") as fid:
+                    report_template = fid.read()
+
+                with open(self.report_list[ii], "w") as fid:
+                    fid.write(report_template % report_string)
+
+                print("%s generated." % self.report_list[ii])
+            else:
+                print("%s skipped." % self.report_list[ii])
+        with open("report_links.html", "w") as fid:
+            fid.write('<html><head><meta charset="utf-8"></head><body><ul>')
+            for report_path in self.report_list:
+                fid.write('<li><a href="%s"> %s </a></li>\n' % (report_path, "file://" + report_path))
+            fid.write('<ul></body></html>')
 
     def show_list(self):
         for monitor in self.ws_structure:
@@ -82,16 +104,4 @@ if __name__ == '__main__':
 
     rg = ReportGenerator()
     rg.startup()
-    rg.show_list()
-    rg.gen_report(target_id)
-    report_string = {}
-    result_template = "var data = [%s];"
-    report_string["data_string"] = result_template % ",".join([graph.get_output(rg.sar_data[target_id].data)
-                                                               for graph in graph_list])
-    report_string["timestamp_string"] = "var timestamp = %s" % rg.sar_data[target_id].data["timestamp"]
-
-    with open("defs/html/report_template.html", "r") as fid:
-        report_template = fid.read()
-
-    with open("report.html", "w") as fid:
-        fid.write(report_template % report_string)
+    rg.gen_all_report()
